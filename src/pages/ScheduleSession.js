@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
-import { Paper, Typography, TextField, Button, Grid, MenuItem } from '@mui/material';
+import { Paper, Typography, TextField, Button, Grid, MenuItem, Select, InputLabel, FormControl, Chip } from '@mui/material';
 
 function ScheduleSession() {
-  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState([]);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [sessionType, setSessionType] = useState('one-on-one');
 
+  const handleUserChange = (event) => {
+    const users = event.target.value;
+    setSelectedUsers(users);
+    setSessionType(users.length > 1 ? 'group' : 'one-on-one');
+  };
+
   const handleSchedule = () => {
     // Implement scheduling logic here
-    console.log('Scheduling session:', { selectedUser, startTime, endTime, sessionType });
+    console.log('Scheduling session:', { selectedUsers, startTime, endTime, sessionType });
   };
 
   return (
@@ -19,17 +25,28 @@ function ScheduleSession() {
       </Typography>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <TextField
-            label="Select User"
-            fullWidth
-            select
-            value={selectedUser}
-            onChange={(e) => setSelectedUser(e.target.value)}
-          >
-            <MenuItem value="user1">User 1</MenuItem>
-            <MenuItem value="user2">User 2</MenuItem>
-            {/* Add more users as needed */}
-          </TextField>
+          <FormControl fullWidth>
+            <InputLabel>Select User(s)</InputLabel>
+            <Select
+              label="Select User(s)"
+              multiple
+              value={selectedUsers}
+              onChange={handleUserChange}
+              renderValue={(selected) => (
+                <div>
+                  {selected.map((value) => (
+                    <Chip key={value} label={value} />
+                  ))}
+                </div>
+              )}
+            >
+              <MenuItem value="user1">User 1</MenuItem>
+              <MenuItem value="user2">User 2</MenuItem>
+              <MenuItem value="user3">User 3</MenuItem>
+              <MenuItem value="user4">User 4</MenuItem>
+              {/* Add more users as needed */}
+            </Select>
+          </FormControl>
         </Grid>
         <Grid item xs={12} sm={6}>
           <TextField
@@ -55,13 +72,9 @@ function ScheduleSession() {
           <TextField
             label="Session Type"
             fullWidth
-            select
             value={sessionType}
-            onChange={(e) => setSessionType(e.target.value)}
-          >
-            <MenuItem value="one-on-one">One-on-One</MenuItem>
-            <MenuItem value="group">Group</MenuItem>
-          </TextField>
+            InputProps={{ readOnly: true }}
+          />
         </Grid>
         <Grid item xs={12}>
           <Button variant="contained" color="primary" onClick={handleSchedule}>
