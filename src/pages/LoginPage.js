@@ -40,9 +40,9 @@ function LoginPage() {
 
     if (valid) {
       // Simple role-based redirection
-      if (role === 'admin') {
+      if (role === 'Admin' || 'admin') {
         navigate('/admin');
-      } else if (role === 'user') {
+      } else if (role === 'user' || 'User') {
         navigate('/user');
       }
     }

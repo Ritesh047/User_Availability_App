@@ -9,7 +9,7 @@ import ViewAvailability from './pages/ViewAvailability';
 import ScheduleSession from './pages/ScheduleSession';
 import theme from './theme';
 
-function App() {
+function App() {  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
