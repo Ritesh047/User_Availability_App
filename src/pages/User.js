@@ -1,58 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  InputAdornment
+  Paper, Typography, TextField, Button, Grid, IconButton, List, ListItem, ListItemText, ListItemSecondaryAction
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 
 const durationOptions = [
-  { value: 30, label: '30 minutes' },
-  { value: 60, label: '1 hour' },
+  { label: '30 minutes', value: 30 },
+  { label: '60 minutes', value: 60 },
+  { label: '90 minutes', value: 90 },
+  { label: '120 minutes', value: 120 },
 ];
 
 function User() {
   const [availability, setAvailability] = useState({
-    date: null,
+    dateTime: null,
     day: '',
-    startTime: '',
-    endTime: '',
+    startTime: null,
+    endTime: null,
     duration: '30',
   });
   const [availabilityList, setAvailabilityList] = useState([]);
-  const [upcomingSessions] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    if (availability.date) {
-      const dayOfWeek = dayjs(availability.date).format('dddd');
+  const updateDay = (date) => {
+    if (date) {
+      const dayOfWeek = dayjs(date).format('dddd');
       setAvailability((prev) => ({
         ...prev,
-        day: dayOfWeek
+        day: dayOfWeek,
       }));
     }
-  }, [availability.date]);
+  };
 
   useEffect(() => {
     if (availability.startTime && availability.endTime) {
-      const start = dayjs(availability.startTime, 'HH:mm');
-      const end = dayjs(availability.endTime, 'HH:mm');
+      const start = dayjs(availability.startTime);
+      const end = dayjs(availability.endTime);
       const duration = end.diff(start, 'minute');
 
-      // Automatically set duration to the closest valid option
-      const closestDuration = durationOptions.reduce((prev, curr) => 
+      const closestDuration = durationOptions.reduce((prev, curr) =>
         Math.abs(curr.value - duration) < Math.abs(prev.value - duration) ? curr : prev
       );
 
@@ -63,55 +56,82 @@ function User() {
     }
   }, [availability.startTime, availability.endTime]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setAvailability({
-      ...availability,
-      [name]: value
-    });
+  const handleStartTimeChange = (newStartTime) => {
+    setAvailability((prev) => ({
+      ...prev,
+      startTime: newStartTime,
+    }));
+    updateDay(newStartTime);
   };
 
-  const handleDateChange = (newDate) => {
-    setAvailability({
-      ...availability,
-      date: newDate,
-    });
+  const handleEndTimeChange = (newEndTime) => {
+    setAvailability((prev) => ({
+      ...prev,
+      endTime: newEndTime,
+    }));
+    updateDay(newEndTime);
   };
 
-  const handleAddAvailability = () => {
-    setAvailabilityList([...availabilityList, availability]);
+  const handleAddOrUpdateAvailability = () => {
+    const start = dayjs(availability.startTime);
+    const end = dayjs(availability.endTime);
+    
+    if (!availability.startTime || !availability.endTime) {
+      setErrorMessage('Please set both start time and end time.');
+      return;
+    }
+
+    if (start.isAfter(end)) {
+      setErrorMessage('End time must be after start time.');
+      return;
+    }
+
+    if (editingIndex !== null) {
+      const updatedAvailabilityList = [...availabilityList];
+      updatedAvailabilityList[editingIndex] = availability;
+      setAvailabilityList(updatedAvailabilityList);
+      setEditingIndex(null);
+    } else {
+      setAvailabilityList([...availabilityList, availability]);
+    }
     setAvailability({
-      date: null,
+      dateTime: null,
       day: '',
-      startTime: '',
-      endTime: '',
+      startTime: null,
+      endTime: null,
       duration: '30'
     });
+    setErrorMessage('');
   };
 
-  const handleUpdateAvailability = (index) => {
-    const updatedAvailability = { ...availabilityList[index], ...availability };
-    const newList = [...availabilityList];
-    newList[index] = updatedAvailability;
-    setAvailabilityList(newList);
-    setAvailability({
-      date: null,
-      day: '',
-      startTime: '',
-      endTime: '',
-      duration: '30'
-    });
+  const handleEditAvailability = (index) => {
+    const selectedAvailability = availabilityList[index];
+    setAvailability(selectedAvailability);
+    setEditingIndex(index);
   };
 
   const handleDeleteAvailability = (index) => {
     const newList = availabilityList.filter((_, i) => i !== index);
     setAvailabilityList(newList);
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      setAvailability({
+        dateTime: null,
+        day: '',
+        startTime: null,
+        endTime: null,
+        duration: '30'
+      });
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Availability submitted:', availabilityList);
-    // TODO: Implement actual submission logic
+  // Sort the availabilityList by startTime (upcoming first)
+  const sortedAvailabilityList = availabilityList.slice().sort((a, b) => {
+    return dayjs(a.startTime).isAfter(dayjs(b.startTime)) ? 1 : -1;
+  });
+
+  const isUpcoming = (startTime) => {
+    return dayjs(startTime).isAfter(dayjs());
   };
 
   return (
@@ -122,19 +142,31 @@ function User() {
       <Typography variant="h6" component="h2" gutterBottom>
         Set Your Availability
       </Typography>
-      <form onSubmit={handleSubmit}>
+      <form>
         <Grid container spacing={2} justifyContent="center">
           <Grid item xs={12} sm={6}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Select Date"
-                value={availability.date}
-                onChange={handleDateChange}
+              <DateTimePicker
+                label="Start Time"
+                value={availability.startTime}
+                onChange={handleStartTimeChange}
                 renderInput={(params) => <TextField {...params} fullWidth required />}
-                sx={{ mb: 2 }} // Add margin bottom for spacing
+                sx={{ mb: 2 }}
               />
             </LocalizationProvider>
           </Grid>
+          <Grid item xs={12} sm={6}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateTimePicker
+                label="End Time"
+                value={availability.endTime}
+                onChange={handleEndTimeChange}
+                renderInput={(params) => <TextField {...params} fullWidth required />}
+                sx={{ mb: 2 }}
+              />
+            </LocalizationProvider>
+          </Grid>
+
           <Grid item xs={12} sm={6}>
             <TextField
               name="day"
@@ -143,78 +175,51 @@ function User() {
               InputProps={{ readOnly: true }}
               fullWidth
               required
-              sx={{ mb: 2 }} // Add margin bottom for spacing
+              sx={{ mb: 2 }}
             />
           </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              name="startTime"
-              label="Start Time"
-              type="time"
-              fullWidth
-              value={availability.startTime}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              required
-              sx={{ mb: 2 }} // Add margin bottom for spacing
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              name="endTime"
-              label="End Time"
-              type="time"
-              fullWidth
-              value={availability.endTime}
-              onChange={handleChange}
-              InputLabelProps={{ shrink: true }}
-              required
-              sx={{ mb: 2 }} // Add margin bottom for spacing
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              name="duration"
-              label="Duration"
-              type="number"
-              InputProps={{
-                endAdornment: <InputAdornment position="end">minutes</InputAdornment>,
-              }}
-              fullWidth
-              value={availability.duration}
-              onChange={handleChange}
-              required
-              InputLabelProps={{ shrink: true }}
-              disabled
-              sx={{ mb: 2 }} // Add margin bottom for spacing
-            />
-          </Grid>
+
+          {errorMessage && (
+            <Grid item xs={12}>
+              <Typography variant="body2" color="error" align="center">
+                {errorMessage}
+              </Typography>
+            </Grid>
+          )}
+
           <Grid item xs={12}>
             <Button
               variant="contained"
               color="primary"
-              onClick={handleAddAvailability}
+              onClick={handleAddOrUpdateAvailability}
               startIcon={<AddIcon />}
             >
-              Add Availability
+              {editingIndex !== null ? 'Update Availability' : 'Add Availability'}
             </Button>
           </Grid>
+
           <Grid item xs={12}>
             <List>
-              {availabilityList.map((slot, index) => (
-                <ListItem key={index}>
+              {sortedAvailabilityList.map((slot, index) => (
+                <ListItem
+                  key={index}
+                  sx={{
+                    backgroundColor: isUpcoming(slot.startTime) ? 'lightgreen' : 'lightgray',
+                    mb: 1,
+                  }}
+                >
                   <ListItemText
                     primary={`${
-                      slot.date ? dayjs(slot.date).format('DD/MM/YYYY') : 'No Date'
-                    } - ${slot.day}: ${slot.startTime} - ${slot.endTime} (${slot.duration} minutes)`}
+                      slot.startTime ? dayjs(slot.startTime).format('DD/MM/YYYY') : 'No Date'
+                    } - ${slot.day}: ${dayjs(slot.startTime).format('HH:mm')} - ${dayjs(slot.endTime).format('HH:mm')} (${slot.duration} minutes)`}
                   />
                   <ListItemSecondaryAction>
                     <IconButton
                       edge="end"
                       aria-label="edit"
-                      onClick={() => handleUpdateAvailability(index)}
+                      onClick={() => handleEditAvailability(index)}
                     >
-                      <AddIcon />
+                      <EditIcon />
                     </IconButton>
                     <IconButton
                       edge="end"
@@ -228,29 +233,8 @@ function User() {
               ))}
             </List>
           </Grid>
-          <Grid item xs={12}>
-            <Button variant="contained" color="primary" type="submit">
-              Submit Availability
-            </Button>
-          </Grid>
         </Grid>
       </form>
-      <Typography variant="h6" component="h2" gutterBottom sx={{ mt: 4 }}>
-        Upcoming Scheduled Sessions
-      </Typography>
-      <List>
-        {upcomingSessions.length > 0 ? (
-          upcomingSessions.map((session, index) => (
-            <ListItem key={index}>
-              <ListItemText primary={`Session with ${session.client} on ${session.date}`} />
-            </ListItem>
-          ))
-        ) : (
-          <ListItem>
-            <ListItemText primary="No upcoming sessions scheduled." />
-          </ListItem>
-        )}
-      </List>
     </Paper>
   );
 }

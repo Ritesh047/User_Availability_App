@@ -13,6 +13,7 @@ function Admin() {
       </Typography>
 
       <Grid container spacing={2} justifyContent="center" sx={{ mt: 4 }}>
+        {/* View User Availability Card */}
         <Grid item xs={12} sm={6} md={4}>
           <Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
@@ -26,12 +27,14 @@ function Admin() {
               color="primary" 
               component={Link} 
               to="/view-availability"
+              aria-label="View User Availability"
             >
               View Availability
             </Button>
           </Paper>
         </Grid>
         
+        {/* Schedule Sessions Card */}
         <Grid item xs={12} sm={6} md={4}>
           <Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}>
             <Typography variant="h6" gutterBottom>
@@ -45,6 +48,7 @@ function Admin() {
               color="secondary" 
               component={Link} 
               to="/schedule-session"
+              aria-label="Schedule Session"
             >
               Schedule Session
             </Button>

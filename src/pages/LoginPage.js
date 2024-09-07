@@ -9,22 +9,19 @@ function LoginPage() {
   const [emailError, setEmailError] = useState('');
   const navigate = useNavigate();
 
-  // Function to validate email format using regex
   const validateEmail = (email) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     return emailRegex.test(email);
   };
 
   const handleLogin = (event) => {
-    event.preventDefault(); // Prevent the default form submission behavior
+    event.preventDefault();
 
     let valid = true;
 
-    // Clear previous errors
     setRoleError('');
     setEmailError('');
 
-    // Check if email and role are provided and valid
     if (!email) {
       setEmailError('Email is required');
       valid = false;
@@ -36,13 +33,15 @@ function LoginPage() {
     if (!role) {
       setRoleError('Role is required');
       valid = false;
+    } else if (!['admin', 'user'].includes(role.toLowerCase())) {
+      setRoleError('Role must be either Admin or User');
+      valid = false;
     }
 
     if (valid) {
-      // Simple role-based redirection
-      if (role === 'Admin' || 'admin') {
+      if (role.toLowerCase() === 'admin') {
         navigate('/admin');
-      } else if (role === 'user' || 'User') {
+      } else if (role.toLowerCase() === 'user') {
         navigate('/user');
       }
     }
